@@ -1,0 +1,30 @@
+numpy
+matplotlib
+scipy
+pandas
+tqdm
+nibabel
+pyvista
+networkx
+
+
+# scooby
+# imageio
+# seaborn
+# vtk
+# skan
+# scikit-image
+# appdirs
+# mayavi
+# PyQt5
+# SimpleITK
+## conda install -c vmtk vtk itk vmtk
+## conda install llvm=3.3
+# trimesh
+# meshio
+# meshplot
+# open3d
+# meshio
+
+## conda install wildmeshing
+## conda install -c conda-forge igl

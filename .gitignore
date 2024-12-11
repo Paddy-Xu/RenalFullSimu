@@ -1,0 +1,11 @@
+*
+!*/
+!*.py
+!.gitignore
+!README.md
+!*.vtk
+!requirements.txt
+!surface.nii.gz
+*legacy*
+*.sh
+/nephron_statistics.py
