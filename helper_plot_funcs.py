@@ -45,7 +45,6 @@ def plot_save_results_before_iteration(df, _iter, path, P_in):
     plt.scatter(all_terminal_pressures, T0_all)
     plt.xlabel('terminal pressure')
     plt.ylabel('Tension')
-    # plt.show()
     plt.savefig(os.path.join(path, f"tension_vs_pressure{_iter}.png"), format="png", bbox_inches="tight")
     plt.clf()
 

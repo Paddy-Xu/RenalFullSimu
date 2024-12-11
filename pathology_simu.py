@@ -16,7 +16,6 @@ def stenosis(P_in=140, start_ratio = 0.2):
         auto.vt.tree[auto.root_edge[0]][auto.root_edge[1]]['radius'] = root_radius_orig * ratio
         auto.vt.label_resistance()
         auto.vt.Kirchoff_law_PC(P_in=auto.P_in)  # N/mm2
-        # vt.Kirchoff_law_efferent(P_in=P_in)  # N/mm2
         before, after = auto.auto_reg()
         in_flow = auto.vt.tree[auto.root_edge[0]][auto.root_edge[1]]['flow_from_Kirchhoff']  # mm3/s
         in_flow = in_flow / 1e3 * 60
@@ -46,7 +45,6 @@ def remove_terminals(P_in=140, start_ratio = 0.2):
 
         auto.vt.tree = tree_copy
         all_terminals = [i for i in auto.vt.tree.nodes if len(list(auto.vt.tree.successors(i))) == 0]
-        # all_terminal_edges = [(list(auto.vt.tree.predecessors(i))[0], i) for i in all_terminals]
         nodes_to_delete = np.random.choice(all_terminals,  round(len(all_terminals) * ratio), replace=False)
         auto.vt.tree.remove_nodes_from(nodes_to_delete)
         auto.vt.reorder_nodes()
@@ -58,9 +56,6 @@ def remove_terminals(P_in=140, start_ratio = 0.2):
         auto.vt.Kirchoff_law_PC(P_in=auto.P_in)  # N/mm2
         # vt.Kirchoff_law_efferent(P_in=P_in)  # N/mm2
         before, after = auto.auto_reg()
-
-        # in_flow = auto.vt.tree[root_edge[0]][root_edge[1]]['flow_from_Kirchhoff']  # mm3/s
-        # in_flow = in_flow / 1e3 * 60
 
         print(f'in_flow = {after:.4f} ml/min at {int(ratio*100)}% terminals removed')
         print(f'before = {before:.4f}')

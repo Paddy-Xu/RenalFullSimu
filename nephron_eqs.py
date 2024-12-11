@@ -44,8 +44,6 @@ def Cs_asce(Q_T_desc_end, z, C, md_loc=0.5):
              )/Q_T_desc_end
 
 def Cs_asce_thin(Q_T_desc_end, z, C, long=True):
-    # C_I = 275 - 75/0.5 * z
-
     C_I = 300
     Ls  = Tubular.Ls_long if long else Tubular.Ls_inter
     return - 6e7 * (Ls * (C - C_I))/Q_T_desc_end
@@ -63,14 +61,9 @@ def P_T_asce(Q_T_desc_end, P_end, z, asce_length=0.65):
 
 def P_T_proximal(Q_T0, P_TZ, z):
     Z = 1
-    # k1 = 1/60 * 1/133.322 * 1e-6 * 8 * Tubular.mu/(np.pi * Tubular.r_proximal**4
-    #                                           ) * Tubular.keppa/Tubular.theta**2
-    k2 = 1/60 * 1/133.322 * 1e-6 * 8 * Tubular.mu/(np.pi * Tubular.r_proximal**4
-                                              )
+    k2 = 1/60 * 1/133.322 * 1e-6 * 8 * Tubular.mu/(np.pi * Tubular.r_proximal**4)
     k1 = k2 * Tubular.keppa/Tubular.theta**2
-
     P_T = (k1 * (np.exp(-Tubular.theta * z) - np.exp(-Tubular.theta * Z)) +
            k2 * (Q_T0 - Tubular.keppa/Tubular.theta) * (Z - z) + P_TZ)
-
     return P_T
 

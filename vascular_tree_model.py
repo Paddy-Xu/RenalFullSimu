@@ -1413,8 +1413,6 @@ if __name__ == '__main__':
 
     vt.save_terminal_only(save_file[:-4] + 'only_terminal' + '.vtk')
 
-    # sys.exit()
-
     vt.label_pressure_drop()
 
     vt.label_pressure_from_root_di(
@@ -1473,86 +1471,3 @@ if __name__ == '__main__':
 
     plt.hist(all_terminal_pressures, 30)
     plt.show()
-
-    vt.Kirchoff_law_PC(P_in=120 * 133.322e-6)
-
-    vt.Kirchoff_law_efferent()
-
-    vt.Kirchoff_law()
-
-    vt.save('kirchhoff.vtk')
-
-    terminal_flow = np.array([vt.tree[i][j]['flow_from_Kirchhoff_nl/s'] for (i, j) in all_terminal_edges])
-    terminal_flow = terminal_flow.astype(np.float32)
-    plt.hist(terminal_flow, 20)
-    plt.show()
-
-    total_res = vt.label_total_resistance()
-
-    vt.label_wss()
-
-    node = [n for n in vt.tree.nodes if vt.tree.nodes[n]['root']][0]
-    children = np.array(list(vt.tree.successors(node)))[0]
-
-    inlet = vt.tree[node][children]['flow']
-    total_drop = inlet * total_res
-    100 * 133.322e-12 - total_drop
-    # 1 mmhg = 133.322 Pa
-
-    vt.tree[node][children]['resistance']
-
-    vt.save('sb.vtk')
-    # N s micro-meter-2
-
-    all_wss = [vt.tree[a][b]['wall_shear_stress_Pa'] for (a, b) in vt.tree.edges]
-
-    plt.figure()
-    plt.hist(all_wss)
-    plt.show()
-
-    all_leaf_pressure = [vt.tree.nodes[i]['pressure'] for i in vt.tree.nodes if vt.tree.nodes[i]['level'] == 1]
-    plt.hist(all_leaf_pressure, 20)
-    plt.xlabel('Terminal pressure (1e12Pa)')
-    plt.ylabel('Frequency')
-    plt.title('Terminal pressure frequency')
-    plt.savefig("pressure_hist_pa.pdf", format="pdf", bbox_inches="tight")
-
-    plt.show()
-
-    all_leaf_pressure = [vt.tree.nodes[i]['pressure_mmhg'] for i in vt.tree.nodes if vt.tree.nodes[i]['level'] == 1]
-
-    _, bins, _ = plt.hist(all_leaf_pressure, 20,
-                          # density=1,
-                          )
-
-    mu, sigma = scipy.stats.norm.fit(all_leaf_pressure)
-
-    _, bins1 = np.histogram(all_leaf_pressure, 60,
-                            density=1,
-                            )
-    best_fit_line = scipy.stats.norm.pdf(bins1, mu, sigma)
-
-    # plt.plot(bins, best_fit_line, label='Gaussian fit curve')
-    plt.plot(bins1, best_fit_line * np.mean(np.diff(bins)) * len(all_leaf_pressure), label='Gaussian fit curve')
-
-    plt.xlabel('Terminal pressure (in mmHg)')
-    plt.ylabel('Frequency')
-    # plt.ylabel('Probability')
-    plt.title('Terminal pressure frequency')
-    plt.title(f'Terminal pressure frequency mean = {round(mu, 2)}, sigma = {round(sigma, 2)}')
-    plt.legend()
-    plt.savefig("pressure_hist_mmhg.pdf", format="pdf", bbox_inches="tight")
-    plt.show()
-
-    # hist, bins = np.histogram(all_leaf_pressure, 20,
-    #                       density=1,
-    #                       )
-    #
-    # plt.bar(bins[:-1], hist * len(all_leaf_pressure), width=np.diff(bins))
-    # plt.plot(bins, best_fit_line * len(all_leaf_pressure), label='Gaussian fit curve')
-    # plt.legend()
-    # plt.show()
-
-    a = [vt.tree.nodes[i]['loc'] for i in vt.tree.nodes if len(list(vt.tree.neighbors(i))) == 1]
-
-    vt.save(save_file)

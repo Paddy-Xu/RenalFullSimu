@@ -181,7 +181,6 @@ def func_glomerular(P_T0, Q_A, P_GC=None, final=False, long=False, inter=False, 
     if Cs_md < 0:
         raise NegativeFlowException('negative in Cs_md')
 
-
     if debug:
         off_set = t_list[-1][-1]
         Cs_list.append(y[:md_index])
@@ -246,8 +245,6 @@ def func_glomerular(P_T0, Q_A, P_GC=None, final=False, long=False, inter=False, 
     P_start = P_T_proximal(Q_T0, P_proximal_end, z=0)
 
     logging.debug(f'{P_start = }')
-
-    # print(f'{P_T0 = }, {P_start = } {np.abs(P_start - P_T0)}')
 
     if not final:
         return P_T0 - P_start

@@ -36,7 +36,6 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
         P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC, final=True)
 
     except NegativeFlowException as e:
-        # logging.warning(f"FlowException in finding P0: with {Q_A = }  {P_GC = }")
 
         logging.info(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0")
         print(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0", end=', ')
@@ -70,7 +69,6 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
         logging.warning(f"Warning in finding r_new: with {Q_A = } {P_GC = } {Cs_md_final = } {P_v = }")
         print(e)
         sys.exit()
-        # return r_v, Q_T0, 0, 0, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end
 
     logging.info(f'{P_0_final_again:.2f}, {Cs_md_final:.2f}, {r_opt:.2f}')
 

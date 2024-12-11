@@ -43,8 +43,6 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
         P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC, final=True)
 
     except NegativeFlowException as e:
-        # logging.warning(f"FlowException in finding P0: with {Q_A = }  {P_GC = }")
-
         logging.info(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0")
         print(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0", end=', ')
         P_0_final, P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = 0, 0, 0, 0, 0, 0
@@ -175,20 +173,17 @@ class AutoRegulation:
 
         for i in vt.tree.nodes:
             vt.tree.nodes[i]['pressure'] = vt.tree.nodes[i]['pressure_from_Kirchhoff'] * 1e-6  #
-            # self.tree.nodes[i]['pressure_from_Kirchhoff_mmHg'] = res[i]/(133.322e-12)
             vt.tree.nodes[i]['pressure_mmHg'] = vt.tree.nodes[i]['pressure_from_Kirchhoff_mmHg']
 
         print(f'in_flow = {in_flow:.4f} ml/min before iterations')
         logging.warning(f'in_flow = {in_flow:.4f} ml/min before iterations')
-        # sys.exit()
 
         all_terminal_type = np.zeros(len(all_terminals))
         if self.pop:
             surface = nib.load(surface_name).get_fdata()
             surface = np.array(np.where(surface)).T
             all_terminal_pos = np.array([vt.tree.nodes[i]['loc'] for i in all_terminals])
-            # all_terminal_dist_to_surface = [np.min(np.linalg.norm(i-surface, axis=1)) for i in all_terminal_pos]
-            # all_terminal_dist_to_surface = np.array(all_terminal_dist_to_surface)
+
             sb = scipy.spatial.KDTree(surface)
             all_terminal_dist_to_surface = sb.query(all_terminal_pos)
             all_terminal_dist_to_surface = all_terminal_dist_to_surface[0]
@@ -235,7 +230,6 @@ class AutoRegulation:
 
         for i in self.vt.tree.nodes:
             self.vt.tree.nodes[i]['pressure'] = self.vt.tree.nodes[i]['pressure_from_Kirchhoff'] * 1e-6  #
-            # self.tree.nodes[i]['pressure_from_Kirchhoff_mmHg'] = res[i]/(133.322e-12)
             self.vt.tree.nodes[i]['pressure_mmHg'] = self.vt.tree.nodes[i]['pressure_from_Kirchhoff_mmHg']
 
         self.logging.warning(f'in_flow = {in_flow_before:.4f} ml/min before iterations')
