@@ -5,10 +5,12 @@ from parameters import *
 def C_protein(Q_A, P_GC, P_T0, x, C):
     return Glomerular.Kf/(Glomerular.L * Q_A * Glomerular.C_A) * C**2 * (
             P_GC - P_T0 - Glomerular.a * C - Glomerular.b * C**2)
+
 def P_T_desc(sol_desc, z, P):
     Qz = sol_desc(z)[0]
     dP = - 1/60 * 1/133.322 * 1e-6 * 8 * Tubular.mu/(np.pi * Tubular.r_loop**4) * Qz
     return dP
+
 def Q_T_proximal(Q_T0, z):
     C = Q_T0 - Tubular.keppa/Tubular.theta
     Q_T = C + Tubular.keppa/Tubular.theta * np.exp(-Tubular.theta * z)

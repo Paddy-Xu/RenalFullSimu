@@ -786,10 +786,6 @@ class VtkNetworkAnalysis(VtkNetwork):
             self.label_pressure_from_root_di(i)
 
 
-    def back_prop_terminal_flow(self):
-        pass
-
-
     def save_terminal_only(self, file='sanity_check3.vtk'):
 
         tree_copy = copy.deepcopy(self.tree)
@@ -879,8 +875,6 @@ class VtkNetworkAnalysis(VtkNetwork):
         return eq + np.sum([self.label_total_resistance(i) for i in children])
 
     def reorder_nodes(self):
-
-        level_map = {}
 
         all_nodes = list(self.tree.nodes)
 
@@ -1385,18 +1379,84 @@ class VtkNetworkAnalysis(VtkNetwork):
         all_neighbors = [i for i in all_children if i != node]
         return np.array(all_neighbors)
 
+    def back_prop_terminal_flow(self):
+        pass
+
+        plt.show()
+
+
+    def find_dist_to_all_neighbors(self, n):
+
+        assert self.UnDi_tree is not None and self.all_terminals is not None
+
+        all_dist = []
+        for other_leaf in self.all_terminals:
+            if other_leaf != n:
+                path = nx.shortest_path(self.UnDi_tree, n, other_leaf)
+                all_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
+                all_length = [self.UnDi_tree[i][j]['length'] for (i, j) in all_edges]
+                cur_dist = np.sum(all_length)
+                all_dist.append(cur_dist)
+            else:
+                all_dist.append(0)
+
+        return all_dist
+
+    #
+    # def neighbor_AA_distance(self):
+    #     all_distance = []
+    #
+    #
+    #     for node in self.tree.nodes:
+    #         neighbors = list(self.tree.neighbors(node))
+    #         neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
+    #         if -1 in neighbor_orders or 1 not in neighbor_orders:
+    #             continue
+    #
+    #         root = neighbors[np.where(neighbor_orders == np.max(neighbor_orders))[0][0]]
+    #
+    #         root_along_path = self.find_next_AA_branch([root])
+    #         if len(root_along_path) == 0:
+    #             continue
+    #         root_along_path = root_along_path + [node]
+    #         all_path_edges = [[root_along_path[i], root_along_path[i + 1]] for i in range(len(root_along_path) - 1)]
+    #         all_path_len = [np.array([self.tree[a][b]['length'] for (a, b) in all_path_edges])]
+    #         path_len = np.sum(all_path_len)
+    #         all_distance.append(path_len)
+    #
+    #     all_distance = np.array(all_distance)
+    #     plt.hist(all_distance[all_distance<1000], 20)
+    #     plt.show()
+    #
+    #
+    # def find_next_AA_branch(self, path):
+    #     node = path[0]
+    #     neighbors = list(self.tree.neighbors(node))
+    #     neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
+    #
+    #     if -1 in neighbor_orders:
+    #         return []
+    #
+    #     root = neighbors[np.where(neighbor_orders == np.max(neighbor_orders))[0][0]]
+    #     neighbors = list(self.tree.neighbors(node))
+    #     neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
+    #     if 1 in neighbor_orders:
+    #         return [root] + path
+    #     else:
+    #         return self.find_next_AA_branch([root] + path)
+
+
+
 if __name__ == '__main__':
-    root_loc = [585.18, 206.25, 641]
+
     root_loc = [588, 217, 650]
+    t_flow, mu = 1.167e11 / 3e4, 3.6e-15  # micro-meter3 s-1 # N s micro-meter-2
+    vspace = 22.6
+
 
     pt_file = os.path.join('data', 'kirchhoff_p_in = 100.vtk')
 
     save_file = pt_file[:-4] + '_w_pressure.vtk'
-
-    # root_loc = [590.5, 202.2, 638]
-
-    t_flow, mu = 1.167e11 / 3e4, 3.6e-15  # micro-meter3 s-1 # N s micro-meter-2
-    vspace = 22.6
 
     vt = VtkNetworkAnalysis(pt_file, root_loc, vsize=vspace, mu=mu, t_flow=t_flow)
     vt.build()
@@ -1407,9 +1467,24 @@ if __name__ == '__main__':
     all_terminals = [i for i in vt.tree.nodes if len(list(vt.tree.successors(i))) == 0]
     all_terminal_edges = [(list(vt.tree.predecessors(i))[0], i) for i in all_terminals]
 
+    all_neighbors = vt.find_terminal_all_neighbors(all_terminals[0])
 
-    vt.find_terminal_all_neighbors(all_terminals[0])
+    all_terminal_length = np.array([np.linalg.norm(vt.tree.nodes[i]['loc'] - vt.tree.nodes[j]['loc']) * vspace
+                                    for (i, j) in all_terminal_edges])
 
+    plt.hist(all_terminal_length, 30)
+    plt.show()
+    print(f'mean = {np.mean(all_terminal_length):.3f}, std = {np.std(all_terminal_length):.3f}')
+
+    # vt.reorder_nodes()
+
+    all_terminal_map = {}
+
+    vt.all_terminals = all_terminals
+    vt.UnDi_tree = vt.tree.to_undirected()
+
+    all_dist = [vt.find_dist_to_all_neighbors(i) for i in all_terminals]
+    all_dist = np.array(all_dist)
 
     vt.save_terminal_only(save_file[:-4] + 'only_terminal' + '.vtk')
 
