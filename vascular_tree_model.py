@@ -1,7 +1,13 @@
-from matplotlib import rcParams
-from networkx.classes import all_neighbors
+import sys
 
-rcParams.update({'figure.autolayout': True})
+# from matplotlib import rcParams
+# rcParams.update({'figure.autolayout': True})
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+
 import scipy
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +15,8 @@ import os
 import networkx as nx
 import copy
 import pyvista
+
+from helper_funcs import *
 
 class VtkNetwork:
 
@@ -1370,6 +1378,11 @@ class VtkNetworkAnalysis(VtkNetwork):
 
             # self.tree[i][j]['flow_from_Kirchhoff_nl/s'] = self.tree[i][j]['flow_from_Kirchhoff']/1e6
 
+    def re_compute_length(self):
+        for (i, j) in self.tree.edges:
+            length = np.linalg.norm(self.tree.nodes[i]['loc'] - self.tree.nodes[j]['loc']) * self.vsize
+            self.tree[i][j]['length'] = length
+
     def find_terminal_all_neighbors(self, node):
         """
         Update order when no further operations will be applied.
@@ -1387,18 +1400,24 @@ class VtkNetworkAnalysis(VtkNetwork):
 
     def find_dist_to_all_neighbors(self, n):
 
+        # Note that n is index from 0, not index in the tree
+        if n % 1000 == 0:
+            print(f'{n} nodes done')
         assert self.UnDi_tree is not None and self.all_terminals is not None
 
-        all_dist = []
-        for other_leaf in self.all_terminals:
-            if other_leaf != n:
-                path = nx.shortest_path(self.UnDi_tree, n, other_leaf)
-                all_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
-                all_length = [self.UnDi_tree[i][j]['length'] for (i, j) in all_edges]
-                cur_dist = np.sum(all_length)
-                all_dist.append(cur_dist)
-            else:
-                all_dist.append(0)
+        node = self.all_terminals[n]
+
+        all_dist = [0]
+
+        path = nx.single_source_dijkstra_path_length(vt.UnDi_tree, node, cutoff=1e4, weight='length')
+
+        for other_leaf in self.all_terminals[n+1:]:
+
+            # all_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
+            # all_length = [self.UnDi_tree[i][j]['length'] for (i, j) in all_edges]
+            # cur_dist = np.sum(all_length)
+            cur_dist = path.get(other_leaf, 0)
+            all_dist.append(cur_dist)
 
         return all_dist
 
@@ -1464,7 +1483,8 @@ if __name__ == '__main__':
     vt.to_directed()
     vt.tree = vt.di_tree
 
-    all_terminals = [i for i in vt.tree.nodes if len(list(vt.tree.successors(i))) == 0]
+    all_terminals = np.array([i for i in vt.tree.nodes if len(list(vt.tree.successors(i))) == 0])
+
     all_terminal_edges = [(list(vt.tree.predecessors(i))[0], i) for i in all_terminals]
 
     all_neighbors = vt.find_terminal_all_neighbors(all_terminals[0])
@@ -1472,19 +1492,76 @@ if __name__ == '__main__':
     all_terminal_length = np.array([np.linalg.norm(vt.tree.nodes[i]['loc'] - vt.tree.nodes[j]['loc']) * vspace
                                     for (i, j) in all_terminal_edges])
 
-    plt.hist(all_terminal_length, 30)
-    plt.show()
-    print(f'mean = {np.mean(all_terminal_length):.3f}, std = {np.std(all_terminal_length):.3f}')
+    # plt.hist(all_terminal_length, 30)
+    # plt.show()
 
-    # vt.reorder_nodes()
+    print(f'mean = {np.mean(all_terminal_length):.3f}, std = {np.std(all_terminal_length):.3f}')
+    if not np.all(np.sort(all_terminals) == all_terminals):
+        print('Reordering nodes....')
+        vt.reorder_nodes()
+
+    vt.re_compute_length()
 
     all_terminal_map = {}
 
     vt.all_terminals = all_terminals
     vt.UnDi_tree = vt.tree.to_undirected()
 
-    all_dist = [vt.find_dist_to_all_neighbors(i) for i in all_terminals]
-    all_dist = np.array(all_dist)
+    all_dist = np.load('all_dist.npy')
+
+    all_terminals_nearest_distance = []
+
+
+    def nearest_distance(vt,  all_dist, cur_index):
+
+        # cur_index = 1011
+        cur_node = vt.all_terminals[cur_index]
+
+        a = all_dist[cur_index]
+        non_zero_indices = np.where(a != 0)[0]
+        min_index = np.argmin(a[a != 0])
+        cur_nearest_neighbor_index = non_zero_indices[min_index]
+        cur_nearest_neighbor_nodes = vt.all_terminals[cur_nearest_neighbor_index]
+        min_dist = a[cur_nearest_neighbor_index]
+        path = nx.shortest_path(vt.UnDi_tree, cur_node, cur_nearest_neighbor_nodes)
+        all_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
+        all_length = [vt.UnDi_tree[i][j]['length'] for (i, j) in all_edges]
+        cur_dist = np.sum(all_length)
+        assert np.isclose(cur_dist, min_dist)
+
+        # return min_dist.item()
+        dis_direct = np.linalg.norm(vt.tree.nodes[cur_node]['loc'] -
+                                    vt.tree.nodes[cur_nearest_neighbor_nodes]['loc']) * vspace
+
+        return dis_direct
+
+    all_terminals_nearest_distance = [nearest_distance(vt, all_dist, i) for i in range(len(all_terminals))]
+    all_terminals_nearest_distance = np.array(all_terminals_nearest_distance)
+
+    plt.figure()
+    plt.hist(all_terminals_nearest_distance[all_terminals_nearest_distance>100], 20)
+    plt.savefig('sb.png')
+
+    #
+    # import concurrent.futures
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     all_dist = executor.map(vt.find_dist_to_all_neighbors, range(len(all_terminals)))
+    # from joblib import Parallel, delayed
+    # all_dist = Parallel(n_jobs=-1, batch_size=200)(
+    #     delayed(vt.find_dist_to_all_neighbors)(i) for i in range(100000)
+    # )
+
+    all_dist = [vt.find_dist_to_all_neighbors(i) for i in range(len(all_terminals))]
+
+    print('done computing distances')
+
+    all_dist = construct_symmetric(all_dist)
+
+    # all_dist = np.array(all_dist)
+
+    np.save("all_dist.npy", all_dist)
+
+    sys.exit()
 
     vt.save_terminal_only(save_file[:-4] + 'only_terminal' + '.vtk')
 
