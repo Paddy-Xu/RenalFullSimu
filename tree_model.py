@@ -40,12 +40,13 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
         root = fsolve(func_glomerular_cur, x0=10, args=(Q_A, P_GC))
         assert len(root) == 1
         P_0_final = root[0]
-        P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC, final=True)
+        P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end, P_end, P_md = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC,
+                                                                                            final=True)
 
     except NegativeFlowException as e:
         logging.info(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0")
         print(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0", end=', ')
-        P_0_final, P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = 0, 0, 0, 0, 0, 0
+        P_0_final, P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end, P_end, P_md  = 0, 0, 0, 0, 0, 0, 0, 0
         print(e)
 
     except RuntimeWarning as e:
@@ -54,7 +55,7 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
         logging.warning(f"RuntimeWarning in finding P0: with {Q_A = }  {P_GC = } no regulation happen here")
         logging.warning(e)
 
-        return r_v, 1/3 * Q_A, 0, 0, 0, 0, 0, 0, 1/3, 0, 0
+        return r_v, 1/3 * Q_A, 0, 0, 0, 0, 0, 0, 1/3, 0, 0, 0, 0
 
     ratio = Q_T0/(Q_A*2)
 
@@ -69,7 +70,7 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
 
         T1, x_myo, x_tgf, T_e, T_m = AA_cur(r_v, Cs_md_final, P_v, final=True, only_myo=only_myo)
         
-        return r_v, Q_T0, 0, 0, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
+        return r_v, Q_T0, 0, 0, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m, P_end, P_md
 
     except Exception as e:
         print('This should never happen, other exception not RuntimeWarnings ', end=', ')
@@ -80,7 +81,7 @@ def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
     logging.info(f'{P_0_final_again:.2f}, {Cs_md_final:.2f}, {r_opt:.2f}')
 
 
-    return r_opt, Q_T0, x_myo, x_tgf, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
+    return r_opt, Q_T0, x_myo, x_tgf, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m, P_end, P_md
 
 
 class AutoRegulation:
@@ -123,7 +124,7 @@ class AutoRegulation:
 
         if self.path is None:
             path = (f'path_new_fix_C_params_{int(self.P_in/133.322e-6)}, '
-                    f'{self.lr = }_only_myo_{self.only_myo}')
+                    f'{self.lr = }_only_myo_{self.only_myo}_pop_{self.pop}')
         else:
             path = self.path
 
@@ -277,7 +278,7 @@ class AutoRegulation:
 
             res[:, 0] = radius_before + (res[:, 0] - radius_before) * self.lr
 
-            for (r, q_t_0, x_myo_t, x_tgf_t, cs_md, p0, cs_d_end, qt_d_end, ratio, t_e, t_m, *_), (parent, i) in (
+            for (r, q_t_0, x_myo_t, x_tgf_t, cs_md, p0, cs_d_end, qt_d_end, ratio, t_e, t_m, P_end, P_md, *_), (parent, i) in (
                     zip(res, self.all_terminal_edges)):
                 self.vt.tree[parent][i]['radius'] = r
                 self.vt.tree[parent][i]['filtration_rate'] = q_t_0
@@ -290,6 +291,8 @@ class AutoRegulation:
                 self.vt.tree[parent][i]['ratio'] = ratio
                 self.vt.tree[parent][i]['T_e'] = t_e
                 self.vt.tree[parent][i]['T_m'] = t_m
+                self.vt.tree[parent][i]['P_end'] = P_end
+                self.vt.tree[parent][i]['P_md'] = P_md
 
             self.vt.label_resistance()
 
@@ -316,9 +319,13 @@ class AutoRegulation:
             all_terminal_T_m = np.array([self.vt.tree[i][j]['T_m'] for (i, j) in self.all_terminal_edges])
             all_terminal_T = all_terminal_T_e + all_terminal_T_m
 
+            all_terminal_P_end =np.array([self.vt.tree[i][j]['P_end'] for (i, j) in self.all_terminal_edges])
+            all_terminal_P_md =np.array([self.vt.tree[i][j]['P_md'] for (i, j) in self.all_terminal_edges])
+
             df = np.array([all_terminal_radius, all_terminal_pressures, all_terminal_flow, all_terminal_T,
                            all_terminal_resistance, all_terminal_filtration, all_terminal_x_myo, all_terminal_x_tgf,
-                           all_terminal_Cs_md, all_terminal_T_e, all_terminal_T_m]).T
+                           all_terminal_Cs_md, all_terminal_T_e, all_terminal_T_m,
+                           all_terminal_q_d_end, all_terminal_P_end, all_terminal_P_md]).T
 
             plot_save_results(df, in_flow, _iter, self.path)
 

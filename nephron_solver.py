@@ -194,11 +194,15 @@ def func_glomerular(P_T0, Q_A, P_GC=None, final=False, long=False, inter=False, 
     logging.debug(f'{Cs_md = }')
     logging.debug(f'{Cs_end = }')
 
-    ############   solve P_T at the end (note Q is constant at ascending, so Q_T_asce_end = Q_T_desc_end)     ############
+    ############   solve P_T at the end
+    '''
+    note Q is constant at ascending, so Q_T_asce_end = Q_T_desc_end
+    '''
 
     sol = fsolve(lambda x: x - Q_T_desc_end / (Tubular.alpha * x + Tubular.beta) ** 4, x0=7.2467)
 
     assert len(sol) == 1
+
     P_end = sol[0]
 
     logging.debug(f'{P_end = }')
@@ -215,6 +219,9 @@ def func_glomerular(P_T0, Q_A, P_GC=None, final=False, long=False, inter=False, 
     P_desc_end = P_T_asce(Q_T_desc_end, P_end, 0, asce_length=asce_length)
 
     logging.debug(f'{P_desc_end = }')
+
+    P_md = P_T_asce(Q_T_desc_end, P_end, asce_length-0.15, asce_length=asce_length)
+    logging.debug(f'{P_md = }')
 
     ############   solve P_T at P desc  backwards    ############
 
@@ -253,4 +260,4 @@ def func_glomerular(P_T0, Q_A, P_GC=None, final=False, long=False, inter=False, 
         if debug:
             return P_T0, Cs_md, Q_T0, Cs_desc_end, Q_T_desc_end, Cs_list, t_list
         else:
-            return P_T0, Cs_md, Q_T0, Cs_desc_end, Q_T_desc_end
+            return P_T0, Cs_md, Q_T0, Cs_desc_end, Q_T_desc_end, P_end, P_md

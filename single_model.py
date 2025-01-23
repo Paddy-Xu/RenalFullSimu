@@ -2,78 +2,79 @@ from vascular_tree_model import *
 from afferent_arteriole import *
 import warnings
 import sys
-
+from tree_model import simu
 warnings.filterwarnings("error")
 
 plt.rcParams.update({'figure.max_open_warning': 0})
-
-def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
-
-    Q_A = 6 * 1e-5 * Q * (1 - Glomerular.H_A)  # micro-meter3 s-1 to nanolitter min-1
-    P_v = (P_t_in + P_GC)/2
-
-    if type == 0:
-        func_glomerular_cur = func_glomerular
-        AA_cur = AA_model
-
-    elif type == 1:
-        func_glomerular_cur = partial(func_glomerular,
-                                  inter=True
-                                  )
-        AA_cur = partial(AA_model, type=type)
-    elif type == 2:
-        func_glomerular_cur = partial(func_glomerular,
-                                  long=True
-                                  )
-        AA_cur = partial(AA_model, type=type)
-    else:
-        raise "this should never happen, nephron type needs to be within 3 types"
-
-    try:
-        root = fsolve(func_glomerular_cur, x0=10, args=(Q_A, P_GC))
-        assert len(root) == 1
-        P_0_final = root[0]
-        P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC, final=True)
-
-    except NegativeFlowException as e:
-
-        logging.info(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0")
-        print(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0", end=', ')
-        P_0_final, P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = 0, 0, 0, 0, 0, 0
-        print(e)
-
-    except RuntimeWarning as e:
-        print(f"RuntimeWarning in finding P0: with {Q_A = }  {P_GC = } no regulation happen here", end=', ')
-        print(e)
-        logging.warning(f"RuntimeWarning in finding P0: with {Q_A = }  {P_GC = } no regulation happen here")
-        logging.warning(e)
-
-        return r_v, 1/3 * Q_A, 0, 0, 0, 0, 0, 0, 1/3, 0, 0
-
-    ratio = Q_T0/(Q_A*2)
-
-    try:
-        r_opt = so.brentq(AA_cur, a=1e-1, b=20, args=(Cs_md_final, P_v, False, only_myo))
-        T1, x_myo, x_tgf, T_e, T_m = AA_cur(r_opt,  Cs_md_final, P_v, final=True, only_myo=only_myo)
-
-    except RuntimeWarning as e:
-        print(f"RuntimeWarning in finding r_new: with {Q_A = } {P_GC = } {Cs_md_final = } {P_v = }")
-        print(e)
-        logging.warning(e)
-
-        T1, x_myo, x_tgf, T_e, T_m = AA_cur(r_v, Cs_md_final, P_v, final=True, only_myo=only_myo)
-        return r_v, Q_T0, 0, 0, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
-
-    except Exception as e:
-        print('this should never happen, other exception not RuntimeWarnings ', end=', ')
-        logging.warning(f"Warning in finding r_new: with {Q_A = } {P_GC = } {Cs_md_final = } {P_v = }")
-        print(e)
-        sys.exit()
-
-    logging.info(f'{P_0_final_again:.2f}, {Cs_md_final:.2f}, {r_opt:.2f}')
-
-
-    return r_opt, Q_T0, x_myo, x_tgf, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
+#
+# def simu(Q, r_v, P_t_in, P_GC, type=0, only_myo=False):
+#
+#     Q_A = 6 * 1e-5 * Q * (1 - Glomerular.H_A)  # micro-meter3 s-1 to nanolitter min-1
+#     P_v = (P_t_in + P_GC)/2
+#
+#     if type == 0:
+#         func_glomerular_cur = func_glomerular
+#         AA_cur = AA_model
+#
+#     elif type == 1:
+#         func_glomerular_cur = partial(func_glomerular,
+#                                   inter=True
+#                                   )
+#         AA_cur = partial(AA_model, type=type)
+#     elif type == 2:
+#         func_glomerular_cur = partial(func_glomerular,
+#                                   long=True
+#                                   )
+#         AA_cur = partial(AA_model, type=type)
+#     else:
+#         raise "this should never happen, nephron type needs to be within 3 types"
+#
+#     try:
+#         root = fsolve(func_glomerular_cur, x0=10, args=(Q_A, P_GC))
+#         assert len(root) == 1
+#         P_0_final = root[0]
+#         P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = func_glomerular_cur(P_0_final, Q_A, P_GC=P_GC,
+#                                                                                             final=True)
+#
+#     except NegativeFlowException as e:
+#
+#         logging.info(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0")
+#         print(f"FlowException in finding P0: with {Q_A = }  {P_GC = } Cs_md is set to be 0", end=', ')
+#         P_0_final, P_0_final_again, Cs_md_final, Q_T0, Cs_desc_end, Q_T_desc_end = 0, 0, 0, 0, 0, 0
+#         print(e)
+#
+#     except RuntimeWarning as e:
+#         print(f"RuntimeWarning in finding P0: with {Q_A = }  {P_GC = } no regulation happen here", end=', ')
+#         print(e)
+#         logging.warning(f"RuntimeWarning in finding P0: with {Q_A = }  {P_GC = } no regulation happen here")
+#         logging.warning(e)
+#
+#         return r_v, 1/3 * Q_A, 0, 0, 0, 0, 0, 0, 1/3, 0, 0
+#
+#     ratio = Q_T0/(Q_A*2)
+#
+#     try:
+#         r_opt = so.brentq(AA_cur, a=1e-1, b=20, args=(Cs_md_final, P_v, False, only_myo))
+#         T1, x_myo, x_tgf, T_e, T_m = AA_cur(r_opt,  Cs_md_final, P_v, final=True, only_myo=only_myo)
+#
+#     except RuntimeWarning as e:
+#         print(f"RuntimeWarning in finding r_new: with {Q_A = } {P_GC = } {Cs_md_final = } {P_v = }")
+#         print(e)
+#         logging.warning(e)
+#
+#         T1, x_myo, x_tgf, T_e, T_m = AA_cur(r_v, Cs_md_final, P_v, final=True, only_myo=only_myo)
+#         return r_v, Q_T0, 0, 0, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
+#
+#     except Exception as e:
+#         print('this should never happen, other exception not RuntimeWarnings ', end=', ')
+#         logging.warning(f"Warning in finding r_new: with {Q_A = } {P_GC = } {Cs_md_final = } {P_v = }")
+#         print(e)
+#         sys.exit()
+#
+#     logging.info(f'{P_0_final_again:.2f}, {Cs_md_final:.2f}, {r_opt:.2f}')
+#
+#
+#     return r_opt, Q_T0, x_myo, x_tgf, Cs_md_final, P_0_final, Cs_desc_end, Q_T_desc_end, ratio, T_e, T_m
 
 if __name__ == '__main__':
 
