@@ -352,7 +352,9 @@ if __name__ == '__main__':
     num_iter = 25
     lr = 0.2
     only_myo = False
-    P_in_range = np.arange(100, 201, 10)
+    # P_in_range = np.arange(100, 201, 10)
+    P_in_range = (100, 140)
+
     pop = False
 
     root_loc = [588, 217, 650]
