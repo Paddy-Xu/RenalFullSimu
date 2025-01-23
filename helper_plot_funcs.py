@@ -100,12 +100,30 @@ def plot_save_results_before_iteration(df, _iter, path, P_in):
 def plot_save_results(df, in_flow, _iter, path):
     (all_terminal_radius, all_terminal_pressures, all_terminal_flow, all_terminal_T, all_terminal_resistance,
          all_terminal_filtration, all_terminal_x_myo, all_terminal_x_tgf, all_terminal_Cs_md, all_terminal_T_e,
-         all_terminal_T_m) = df.T
+         all_terminal_T_m, all_terminal_q_d_end, all_terminal_P_end, all_terminal_P_md) = df.T
     df = pd.DataFrame(df, columns=['radius', 'pressure', 'flow', 'T',
                                    'resistance', 'filtration', 'x_myo', 'x_tgf',
-                                   'Cs_md', 'T_e', 'T_m'])
+                                   'Cs_md', 'T_e', 'T_m', 'q_end', 'P_end', 'P_md'])
 
     df.to_csv(os.path.join(path, f'iter_{_iter}.csv'), sep=',', index=False)
+
+    plt.figure()
+    plt.hist(all_terminal_q_d_end, 30)
+    plt.title('all_terminal_q_d_end')
+    plt.savefig(os.path.join(path,f"q_end_{_iter}.png"), format="png", bbox_inches="tight")
+    plt.clf()
+
+    plt.figure()
+    plt.hist(all_terminal_P_end, 30)
+    plt.title('all_terminal_P_end')
+    plt.savefig(os.path.join(path,f"all_terminal_P_end_{_iter}.png"), format="png", bbox_inches="tight")
+    plt.clf()
+
+    plt.figure()
+    plt.hist(all_terminal_P_md, 30)
+    plt.title('all_terminal_P_md')
+    plt.savefig(os.path.join(path, f"all_terminal_P_md_{_iter}.png"), format="png", bbox_inches="tight")
+    plt.clf()
 
     plt.figure()
     plt.scatter(all_terminal_T, all_terminal_Cs_md)
