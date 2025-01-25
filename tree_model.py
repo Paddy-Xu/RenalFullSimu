@@ -353,7 +353,7 @@ if __name__ == '__main__':
     lr = 0.2
     only_myo = False
     # P_in_range = np.arange(100, 201, 10)
-    P_in_range = (100, 140)
+    P_in_range = (140, )
 
     pop = True
 
