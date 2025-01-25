@@ -355,7 +355,7 @@ if __name__ == '__main__':
     # P_in_range = np.arange(100, 201, 10)
     P_in_range = (140, )
 
-    pop = True
+    pop = False
 
     root_loc = [588, 217, 650]
     vspace = 22.6
