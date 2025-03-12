@@ -8,4 +8,5 @@
 !surface.nii.gz
 *legacy*
 *.sh
+*interaction*
 /nephron_statistics.py

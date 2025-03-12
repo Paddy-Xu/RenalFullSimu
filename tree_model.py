@@ -1,5 +1,7 @@
 import os.path
 
+import numpy as np
+
 from afferent_arteriole import *
 from vascular_tree_model import *
 from helper_plot_funcs import *
@@ -117,6 +119,7 @@ class AutoRegulation:
         vt.label_pressure_from_root_di(
             root_pressure=self.P_in * 1e-6
         )
+
 
         if 'kir' not in pt_file:
             vt.Kirchoff_law_PC(P_in=self.P_in, Q0=None)  # N/mm2
@@ -247,7 +250,7 @@ class AutoRegulation:
             P_v_all = (all_terminal_pressures_in + all_terminal_pressures) / 2
             T0_all = P_v_all * all_terminal_radius / (1e3 / 133.32)
 
-            logging.warning(f'T0 = {np.mean(T0_all):.4f} at P0 = {int(P_in/133.322e-6)} at {_iter = }')
+            logging.warning(f'T0 = {np.mean(T0_all):.4f} at P0 = {int(self.P_in/133.322e-6)} at {_iter = }')
             df = np.array([all_terminal_radius, all_terminal_pressures, all_terminal_flow, T0_all,
                            all_terminal_resistance]).T
             if _iter == 0:

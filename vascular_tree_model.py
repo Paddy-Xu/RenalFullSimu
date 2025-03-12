@@ -51,29 +51,13 @@ class VtkNetwork:
         i = 1
         while i < len(line):
             node1, node2 = line[i], line[i + 1]
-            dis = np.linalg.norm(self.tree.nodes[node1]['loc'] - self.tree.nodes[node2]['loc']
-                                 ) * self.vsize
-            if node_radius is not None:
-                radius = np.mean([node_radius[node1], node_radius[node2]])
-            else:
-                radius = mesh.cell_data['radius'][i // 3]
-
             cur_dict = {k: v[i//3] for k, v in mesh.cell_data.items()}
-            # self.tree.add_edge(node1, node2, radius=radius, length=dis)
             self.tree.add_edge(node1, node2, **cur_dict)
-
             i += 3
-
 
         for edge in self.tree.edges:
             a, b = edge
             self.tree[a][b]['radius_neg'] = - self.tree[a][b]['radius']
-
-        # node_to_delete = [node for node in self.tree.nodes if np.sum(self.tree.nodes[node]['loc']**2) > 1**2]
-        #
-        # self.tree.remove_nodes_from(node_to_delete)
-        #
-        # self.save('sb.vtk')
 
         if self.root_loc is not None:
             self.root = self.find_n_with_coord(self.root_loc)
@@ -138,6 +122,7 @@ class VtkNetwork:
         root = [i for i in self.tree.nodes if self.tree.nodes[i]['root']][0]
 
         bfs_to_direct(root)
+
 
     def get_depth(self, root=None):
         if root is None:
@@ -875,10 +860,6 @@ class VtkNetworkAnalysis(VtkNetwork):
 
         eq = 1 / np.sum([1 / self.tree[node][i]['resistance'] for i in children])
 
-        # a = [i for i in self.tree.nodes if self.tree.nodes[i]['level'] == 1]
-        # a = a[0]
-        # b = np.array(list(self.tree.predecessors(a)))[0]
-        # self.tree[b][a]['resistance']
 
         return eq + np.sum([self.label_total_resistance(i) for i in children])
 
@@ -948,13 +929,9 @@ class VtkNetworkAnalysis(VtkNetwork):
 
         res = np.linalg.solve(A, b)  # micro-meter3 s-1 = 1e-6 nl/s = 6e-5 nl/min
         # ##### mm3 s-1 = 1e-15 nl/s = 6e-14 nl/min
-        #
-        # b_new = A.dot(res)
-        # print(np.average(np.isclose(b, b_new)))
 
         for i in range(n_nodes):
             self.tree.nodes[i]['pressure_from_Kirchhoff'] = res[i]  #
-            # self.tree.nodes[i]['pressure_from_Kirchhoff_mmHg'] = res[i]/(133.322e-12)
             self.tree.nodes[i]['pressure_from_Kirchhoff_mmHg'] = res[i] / (133.322e-6)
 
         all_terminals = [i for i in self.tree.nodes if len(list(self.tree.successors(i))) == 0]
@@ -973,8 +950,6 @@ class VtkNetworkAnalysis(VtkNetwork):
             self.tree.nodes[j]['pressure_from_Kirchhoff_mmHg'] = AA_pressure / (133.322e-6)
 
         for (i, j) in self.tree.edges:
-            # self.tree[i][j]['flow_from_Kirchhoff'] = (self.tree.nodes[i]['pressure_from_Kirchhoff'] -
-            #                                           self.tree.nodes[j]['pressure_from_Kirchhoff'])/self.tree[i][j]['resistance']
 
             self.tree[i][j]['flow_from_Kirchhoff'] = (self.tree.nodes[i]['pressure_from_Kirchhoff'] -
                                                       self.tree.nodes[j]['pressure_from_Kirchhoff']) / self.tree[i][j][
@@ -982,7 +957,6 @@ class VtkNetworkAnalysis(VtkNetwork):
             # N mm-2/(N s mm -5) = mm3/s
             self.tree[i][j]['flow_from_Kirchhoff_nl/s'] = self.tree[i][j]['flow_from_Kirchhoff'] * 1e3
 
-            # self.tree[i][j]['flow_from_Kirchhoff_nl/s'] = self.tree[i][j]['flow_from_Kirchhoff']/1e6
         # self.save('kirchhoff_efferent.vtk')
 
     def Kirchoff_law_efferent_flow(self, F_in=7 * 1e3 / 60, P_out=10 * 133.322e-6):
@@ -1057,8 +1031,6 @@ class VtkNetworkAnalysis(VtkNetwork):
             self.tree.nodes[j]['pressure_from_Kirchhoff_mmHg'] = AA_pressure / (133.322e-6)
 
         for (i, j) in self.tree.edges:
-            # self.tree[i][j]['flow_from_Kirchhoff'] = (self.tree.nodes[i]['pressure_from_Kirchhoff'] -
-            #                                           self.tree.nodes[j]['pressure_from_Kirchhoff'])/self.tree[i][j]['resistance']
 
             self.tree[i][j]['flow_from_Kirchhoff'] = (self.tree.nodes[i]['pressure_from_Kirchhoff'] -
                                                       self.tree.nodes[j]['pressure_from_Kirchhoff']) / self.tree[i][j][
@@ -1066,8 +1038,7 @@ class VtkNetworkAnalysis(VtkNetwork):
             # N mm-2/(N s mm -5) = mm3/s
             self.tree[i][j]['flow_from_Kirchhoff_nl/s'] = self.tree[i][j]['flow_from_Kirchhoff'] * 1e3
 
-            # self.tree[i][j]['flow_from_Kirchhoff_nl/s'] = self.tree[i][j]['flow_from_Kirchhoff']/1e6
-        # self.save('kirchhoff_efferent.vtk')
+
 
     def Kirchoff_law_PC(self, P_in=100 * 133.322e-6, P_out=0, Q0=None, ratio=None):
         n_nodes = len(self.tree.nodes)
@@ -1115,9 +1086,7 @@ class VtkNetworkAnalysis(VtkNetwork):
 
                 A[i, i] = coefficient_cur
 
-        # plt.figure()
-        # plt.spy(A)
-        # plt.show()
+
 
         res = np.linalg.solve(A, b)  # micro-meter3 s-1 = 1e-6 nl/s = 6e-5 nl/min
 
@@ -1191,11 +1160,6 @@ class VtkNetworkAnalysis(VtkNetwork):
                 A[i, root_edge[1]] = -1
                 b[i] = self.tree[root][root_edge[1]]['resistance_mm'] * F_in
 
-            # elif i == root_edge[1]:
-            #     A[i, i] = -1
-            #     A[i, root] = 1
-            #     b[i] = self.tree[root][root_edge[1]]['resistance_mm'] * F_in
-
             elif len(list(self.tree.successors(i))) == 0:
                 A[i, i] = 1
                 b[i] = 0
@@ -1221,8 +1185,6 @@ class VtkNetworkAnalysis(VtkNetwork):
                 A[i, i] = coefficient_cur
 
         res = np.linalg.solve(A, b)  # micro-meter3 s-1 = 1e-6 nl/s = 6e-5 nl/min
-
-        # res = np.dot(np.linalg.pinv(A), b)
 
         for i in range(n_nodes):
             self.tree.nodes[i]['pressure_from_Kirchhoff'] = res[i]  #
@@ -1334,24 +1296,6 @@ class VtkNetworkAnalysis(VtkNetwork):
                     A[i, n_out] = - 1 / R_out
 
                 A[i, i] = coefficient_cur
-        #
-        # plt.spy(A)
-        # plt.show()
-        # if np.linalg.cond(A) < 1 / sys.float_info.epsilon:
-        #     print('invertible!')
-
-        # from scipy.sparse import csc_matrix
-        # shape = A.shape
-        # A = csc_matrix(A)
-        # Ainv = scipy.sparse.linalg.inv(A)
-        # res = Ainv.dot(b)
-        # print(res.shape)
-        # id_res = A.dot(Ainv)
-        # del A
-        # print(np.all(np.isclose(np.identity(len(shape))), id_res))
-
-        # res2 = np.dot(np.linalg.inv(A), b)
-        # print(res2.shape)
 
         res = np.linalg.solve(A, b)  # micro-meter3 s-1 = 1e-6 nl/s = 6e-5 nl/min
         ##### mm3 s-1 = 1e-15 nl/s = 6e-14 nl/min
@@ -1421,49 +1365,6 @@ class VtkNetworkAnalysis(VtkNetwork):
 
         return all_dist
 
-    #
-    # def neighbor_AA_distance(self):
-    #     all_distance = []
-    #
-    #
-    #     for node in self.tree.nodes:
-    #         neighbors = list(self.tree.neighbors(node))
-    #         neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
-    #         if -1 in neighbor_orders or 1 not in neighbor_orders:
-    #             continue
-    #
-    #         root = neighbors[np.where(neighbor_orders == np.max(neighbor_orders))[0][0]]
-    #
-    #         root_along_path = self.find_next_AA_branch([root])
-    #         if len(root_along_path) == 0:
-    #             continue
-    #         root_along_path = root_along_path + [node]
-    #         all_path_edges = [[root_along_path[i], root_along_path[i + 1]] for i in range(len(root_along_path) - 1)]
-    #         all_path_len = [np.array([self.tree[a][b]['length'] for (a, b) in all_path_edges])]
-    #         path_len = np.sum(all_path_len)
-    #         all_distance.append(path_len)
-    #
-    #     all_distance = np.array(all_distance)
-    #     plt.hist(all_distance[all_distance<1000], 20)
-    #     plt.show()
-    #
-    #
-    # def find_next_AA_branch(self, path):
-    #     node = path[0]
-    #     neighbors = list(self.tree.neighbors(node))
-    #     neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
-    #
-    #     if -1 in neighbor_orders:
-    #         return []
-    #
-    #     root = neighbors[np.where(neighbor_orders == np.max(neighbor_orders))[0][0]]
-    #     neighbors = list(self.tree.neighbors(node))
-    #     neighbor_orders = np.array([self.tree.nodes[n]['level'] for n in neighbors])
-    #     if 1 in neighbor_orders:
-    #         return [root] + path
-    #     else:
-    #         return self.find_next_AA_branch([root] + path)
-
 
 
 if __name__ == '__main__':
@@ -1492,134 +1393,6 @@ if __name__ == '__main__':
     all_terminal_length = np.array([np.linalg.norm(vt.tree.nodes[i]['loc'] - vt.tree.nodes[j]['loc']) * vspace
                                     for (i, j) in all_terminal_edges])
 
-    # plt.hist(all_terminal_length, 30)
-    # plt.show()
-
-    print(f'mean = {np.mean(all_terminal_length):.3f}, std = {np.std(all_terminal_length):.3f}')
-    if not np.all(np.sort(all_terminals) == all_terminals):
-        print('Reordering nodes....')
-        vt.reorder_nodes()
-
-    vt.re_compute_length()
-
-    all_terminal_map = {}
-
-    vt.all_terminals = all_terminals
-    vt.UnDi_tree = vt.tree.to_undirected()
-
-    all_dist = np.load('all_dist.npy')
-
-    all_terminals_nearest_distance = []
-
-
-    def nearest_distance(vt,  all_dist, cur_index):
-
-        # cur_index = 1011
-        cur_node = vt.all_terminals[cur_index]
-
-        a = all_dist[cur_index]
-        non_zero_indices = np.where(a != 0)[0]
-        min_index = np.argmin(a[a != 0])
-        cur_nearest_neighbor_index = non_zero_indices[min_index]
-        cur_nearest_neighbor_nodes = vt.all_terminals[cur_nearest_neighbor_index]
-        min_dist = a[cur_nearest_neighbor_index]
-        path = nx.shortest_path(vt.UnDi_tree, cur_node, cur_nearest_neighbor_nodes)
-        all_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
-        all_length = [vt.UnDi_tree[i][j]['length'] for (i, j) in all_edges]
-        cur_dist = np.sum(all_length)
-        assert np.isclose(cur_dist, min_dist)
-
-        # return min_dist.item()
-        dis_direct = np.linalg.norm(vt.tree.nodes[cur_node]['loc'] -
-                                    vt.tree.nodes[cur_nearest_neighbor_nodes]['loc']) * vspace
-
-        return dis_direct
-
-    all_terminals_nearest_distance = [nearest_distance(vt, all_dist, i) for i in range(len(all_terminals))]
-    all_terminals_nearest_distance = np.array(all_terminals_nearest_distance)
-
-    plt.figure()
-    plt.hist(all_terminals_nearest_distance[all_terminals_nearest_distance>100], 20)
-    plt.savefig('sb.png')
-
-    #
-    # import concurrent.futures
-    # with concurrent.futures.ProcessPoolExecutor() as executor:
-    #     all_dist = executor.map(vt.find_dist_to_all_neighbors, range(len(all_terminals)))
-    # from joblib import Parallel, delayed
-    # all_dist = Parallel(n_jobs=-1, batch_size=200)(
-    #     delayed(vt.find_dist_to_all_neighbors)(i) for i in range(100000)
-    # )
-
-    all_dist = [vt.find_dist_to_all_neighbors(i) for i in range(len(all_terminals))]
-
-    print('done computing distances')
-
-    all_dist = construct_symmetric(all_dist)
-
-    # all_dist = np.array(all_dist)
-
-    np.save("all_dist.npy", all_dist)
-
-    sys.exit()
-
-    vt.save_terminal_only(save_file[:-4] + 'only_terminal' + '.vtk')
-
-    vt.label_pressure_drop()
-
-    vt.label_pressure_from_root_di(
-        # root_pressure=1.574e-8
-        root_pressure=120 * 133.322e-12
-    )
-
-    vt.Kirchoff_law_PC()
-
-
-    terminal_pressure_drop = [vt.tree.nodes[i]['pressure_mmhg'] - vt.tree.nodes[j]['pressure_mmhg']
-                              for (i, j) in all_terminal_edges]
-
-    terminal_resistance = [vt.tree[i][j]['resistance_mm']
-                           for (i, j) in all_terminal_edges]
-
-    all_terminal_flow = np.array([vt.tree[i][j]['flow'] for (i, j) in all_terminal_edges])
-
-    assert np.all(all_terminal_flow == all_terminal_flow[0])
-
-    plt.hist(terminal_pressure_drop, 30)
-    plt.xlabel('Terminal pressure drop')
-    plt.ylabel('Frequency')
-    plt.show()
-
-    plt.hist(terminal_resistance, 30)
-    plt.xlabel('Terminal resistance')
-    plt.ylabel('Frequency')
-    plt.show()
-
-    all_terminal_pressures = np.array([vt.tree.nodes[i]['pressure_mmhg'] for i in all_terminals])
-    all_terminal_radius = np.array([vt.tree[i][j]['radius'] for (i, j) in all_terminal_edges])
-    all_terminal_length = np.array([vt.tree[i][j]['length'] for (i, j) in all_terminal_edges])
-    plt.scatter(all_terminal_radius, all_terminal_pressures)
-    plt.xlabel('Terminal Radius')
-    plt.ylabel('Terminal Pressure')
-    plt.show()
-
-    plt.scatter(all_terminal_length, all_terminal_pressures)
-    plt.xlabel('Terminal Length')
-    plt.ylabel('Terminal Pressure')
-    plt.show()
-
-    plt.scatter(all_terminal_radius, all_terminal_length)
-    plt.plot(all_terminal_radius, 2 * all_terminal_radius, label='l = 2 * r')
-    plt.xlabel('Terminal radius')
-    plt.ylabel('Terminal length')
-    plt.legend()
-    plt.show()
-    print(np.sum(all_terminal_length / all_terminal_radius < 2))
-
     plt.hist(all_terminal_length, 30)
-    plt.xlabel('Terminal length')
-    plt.ylabel('Frequency')
     plt.show()
 
-    plt.hist(all_terminal_pressures, 30)
-    plt.show()
