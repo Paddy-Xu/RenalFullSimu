@@ -31,13 +31,6 @@ def Combined_desc_long_inter(z, F):
     dC = (-C * dQ_T - 6e7 * Tubular.Ls * (C - C_I))/Q_T
     return dQ_T, dC
 
-# def Combined_desc_inter(z, F):
-#     C_I = 150 + 400/0.8 * z
-#     Q_T, C = F
-#     dQ_T = - Tubular.Lv * Tubular.ns * (C_I - C) * 6e4 #  cm2 l osmol-1 s-1 * mmol =
-#     dC = (-C * dQ_T - 6e7 * Tubular.Ls * (C - C_I))/Q_T
-#
-#     return dQ_T, dC
 
 def Cs_asce(Q_T_desc_end, z, C, md_loc=0.5):
     C_I = (300 - 150/0.3 * z) if z < 0.3 else 150
@@ -50,12 +43,6 @@ def Cs_asce_thin(Q_T_desc_end, z, C, long=True):
     Ls  = Tubular.Ls_long if long else Tubular.Ls_inter
     return - 6e7 * (Ls * (C - C_I))/Q_T_desc_end
 
-# def Cs_asce_thin_inter(Q_T_desc_end, z, C):
-#     C_I = 275 - 75/0.5 * z
-#     # C_I = 275 - 75/0.25 * z
-#
-#     return - 6e7 * (Tubular.Ls_inter * (C - C_I))/Q_T_desc_end
-#
 
 def P_T_asce(Q_T_desc_end, P_end, z, asce_length=0.65):
     return (1/60 * 1/133.322 * 1e-6 * 8 * Tubular.mu/(np.pi * Tubular.r_loop**4) *

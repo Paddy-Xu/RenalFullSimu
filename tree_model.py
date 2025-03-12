@@ -1,7 +1,5 @@
 import os.path
 
-import numpy as np
-
 from afferent_arteriole import *
 from vascular_tree_model import *
 from helper_plot_funcs import *
@@ -355,8 +353,8 @@ if __name__ == '__main__':
     num_iter = 25
     lr = 0.2
     only_myo = False
-    # P_in_range = np.arange(100, 201, 10)
-    P_in_range = (140, )
+    P_in_range = np.arange(100, 201, 10)
+    # P_in_range = (140, )
 
     pop = False
 
