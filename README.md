@@ -35,8 +35,8 @@ The simulation starts by first computing the blood flow and pressure along the v
 as described in the paper. Since this step is quite time-consuming, these can also be precomputed and provide another .vtk file, in which 
 the tree contains not only the topological info but also hemodynamic feautres (flow and pressure without autoregulation).
   
-* ```surface.nii.gz``` A binary mask of the kidney where the full-scale renal arterial tree is reconstructed from. 
-This is ONLY required if we want to differentiate three subpopulations of nephrons based on its depth from kidney surface.
+* ```surface.nii.gz``` A binary mask of the kidney surface, of which the full-scale renal arterial tree was reconstructed from. 
+This is ONLY required if we want to differentiate three subpopulations of nephrons based on its depth/distance from kidney surface.
 
 
 ### Input hyper-parameters
